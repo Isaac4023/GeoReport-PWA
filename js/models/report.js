@@ -5,7 +5,7 @@
  */
 class Report {
   constructor(data = {}) {
-    this.id = data.id || crypto.randomUUID();
+    this.id = data.id || (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : `rep_${Date.now()}_${Math.floor(Math.random()*1000)}`);
     this.title = data.title || '';
     this.description = data.description || '';
     this.latitude = data.latitude || 0;
@@ -84,9 +84,4 @@ class Report {
   }
 }
 
-// Para usar con scripts convencionales o módulos
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = Report;
-} else {
-    window.Report = Report;
-}
+export { Report };

@@ -1,23 +1,14 @@
 // js/modules/notifications.js - Member 2 (Backend Lead)
 const notifications = {
   /**
-   * Solicita permisos para notificaciones locales.
-   * @returns {Promise<boolean>}
+   * Miembro 2: Implementar permisos y envío de notificaciones
    */
   requestPermission: async () => {
-    // Logic for requesting notification permissions
-    return false; // placeholder for member 2's implementation
+    return false;
   },
 
-  /**
-   * Envía una notificación push local.
-   * @param {string} title 
-   * @param {Object} options 
-   */
   sendNotification: async (title, options = {}) => {
-    // Logic for showing a notification using Service Worker or the Notification API
-    console.log(`Notification: ${title}`);
-    // placeholder for member 2's implementation
+    console.log('Implementar notificación aquí (Miembro 2)');
   }
 };
 
