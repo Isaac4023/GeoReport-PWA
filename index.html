@@ -15,37 +15,81 @@
 </head>
 <body>
     <nav id="navbar">
-        <h1>GeoReport</h1>
-        <div id="connection-status" class="online">Online</div>
+        <div class="nav-brand">
+            <div class="logo-circle">GR</div>
+            <h1>GeoReport</h1>
+        </div>
+        <div id="connection-status" class="status-indicator online">
+            <span class="status-dot"></span>
+            <span class="status-text">Online</span>
+        </div>
     </nav>
 
     <main id="app-container">
-        <section id="reports-list-section">
+        <header class="app-header">
             <h2>Mis Reportes</h2>
+            <p class="subtitle">Gestiona las incidencias del campus UT</p>
+        </header>
+        
+        <section id="reports-list-section">
             <div id="reports-list">
                 <!-- Se poblará por js/modules/ui.js -->
+                <div class="loading-placeholder">Cargando incidencias...</div>
             </div>
         </section>
     </main>
 
-    <button id="fab-button" aria-label="Crear Reporte">+</button>
+    <button id="fab-button" aria-label="Crear Reporte" title="Nuevo Reporte">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
 
     <!-- Modal Form -->
     <div id="report-modal" class="hidden">
         <div class="modal-content">
             <header>
-                <h2>Nuevo Reporte</h2>
-                <button id="close-modal">&times;</button>
+                <div class="header-text">
+                    <h2>Nueva Incidencia</h2>
+                    <p>Captura los detalles del problema</p>
+                </div>
+                <button id="close-modal" aria-label="Cerrar">&times;</button>
             </header>
             <form id="report-form">
-                <input type="text" id="report-title" placeholder="Título de la incidencia" required>
-                <textarea id="report-description" placeholder="Descripción detallada"></textarea>
-                <div id="camera-preview"></div>
-                <button type="button" id="capture-pic">Toma Foto</button>
-                <button type="submit">Enviar Reporte</button>
+                <div class="form-group">
+                    <label for="report-title">Título</label>
+                    <input type="text" id="report-title" placeholder="Ej. Lámpara fundida Edificio A" required minlength="5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="report-description">Descripción</label>
+                    <textarea id="report-description" rows="3" placeholder="Detalles de la ubicación o equipo dañado..."></textarea>
+                </div>
+
+                <div class="hardware-section">
+                    <div class="image-preview-container">
+                        <div id="camera-preview">
+                            <span class="placeholder-icon">📸</span>
+                            <p>Sin fotografía</p>
+                        </div>
+                    </div>
+                    <button type="button" id="capture-pic" class="btn-secondary">
+                        Tomar Foto
+                    </button>
+                </div>
+
+                <div class="location-badge">
+                    <span class="loc-icon">📍</span>
+                    <span id="location-name">Esperando ubicación...</span>
+                </div>
+
+                <button type="submit" class="btn-primary" id="submit-btn">
+                    Guardar Incidencia
+                </button>
             </form>
         </div>
     </div>
+
+    <!-- Toast Component -->
+    <div id="toast-container"></div>
 
     <!-- Scripts -->
     <script src="js/config.js"></script>
