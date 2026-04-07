@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoReport PWA - Sistema de Incidencias</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#2563eb">
+</head>
+<body>
+    <nav id="navbar">
+        <h1>GeoReport</h1>
+        <div id="connection-status" class="online">Online</div>
+    </nav>
+
+    <main id="app-container">
+        <section id="reports-list-section">
+            <h2>Mis Reportes</h2>
+            <div id="reports-list">
+                <!-- Se poblará por js/modules/ui.js -->
+            </div>
+        </section>
+    </main>
+
+    <button id="fab-button" aria-label="Crear Reporte">+</button>
+
+    <!-- Modal Form -->
+    <div id="report-modal" class="hidden">
+        <div class="modal-content">
+            <header>
+                <h2>Nuevo Reporte</h2>
+                <button id="close-modal">&times;</button>
+            </header>
+            <form id="report-form">
+                <input type="text" id="report-title" placeholder="Título de la incidencia" required>
+                <textarea id="report-description" placeholder="Descripción detallada"></textarea>
+                <div id="camera-preview"></div>
+                <button type="button" id="capture-pic">Toma Foto</button>
+                <button type="submit">Enviar Reporte</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/models/report.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
