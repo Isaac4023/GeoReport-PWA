@@ -1,41 +1,40 @@
-import { CONFIG } from './config.js';
-import { Report } from './models/report.js';
-import { ui } from './modules/ui.js';
-import { hardware } from './modules/hardware.js';
-import { storage } from './modules/storage.js';
-import { sync } from './modules/sync.js';
-import { notifications } from './modules/notifications.js';
+import { Report } from "./models/report.js";
+import { ui } from "./modules/ui.js";
+import { hardware } from "./modules/hardware.js";
+import { storage } from "./modules/storage.js";
+import { notifications } from "./modules/notifications.js";
 
-/**
- * GeoReport Main Orchestrator
- * Member 1 Skeleton
- */
 async function initApp() {
-  console.log('GeoReport Initializing...');
-  
-  // 1. Initializar Service Worker (Miembro 2)
-  if ('serviceWorker' in navigator) {
-    try {
-      await navigator.serviceWorker.register('./service-worker.js');
-    } catch (e) { console.warn('[SW]:', e); }
+  if ("serviceWorker" in navigator) {
+    await navigator.serviceWorker.register("/service-worker.js");
   }
 
-  // 2. Initializar UI
-  ui.attachEventListeners();
-  
-  // 3. Monitorizar conexión
-  window.addEventListener('online', () => {
-      ui.updateConnectionStatus(true);
-      // TODO: Activar sync cuando esté listo (Miembro 3)
-      // sync.syncPendingReports(storage, notifications);
-  });
-  window.addEventListener('offline', () => ui.updateConnectionStatus(false));
-  
-  // 4. Cargar datos iniciales
-  // storage.getAllReports().then(reports => ui.updateReportsList(reports));
-  ui.updateReportsList([]); // Placeholder
+  await hardware.requestCameraPermission();
+  await hardware.requestLocation();
+  await notifications.requestPermission();
 
-  console.log('✓ GeoReport Miembro 1 Shell Ready');
+  ui.attachEventListeners();
+
+  const reports = await storage.getAllReports();
+  ui.updateReportsList(reports);
+
+  ui.attachFormHandler(async (formData) => {
+    const report = new Report({
+      title: formData.title,
+      description: formData.description,
+      photoData: formData.photoData,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      locationName: formData.locationName,
+      timestamp: Date.now(),
+      status: "pending",
+    });
+
+    await storage.saveReport(report);
+
+    const updated = await storage.getAllReports();
+    ui.updateReportsList(updated);
+  });
 }
 
-window.addEventListener('DOMContentLoaded', initApp);
+window.addEventListener("DOMContentLoaded", initApp);

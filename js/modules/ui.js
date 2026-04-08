@@ -1,116 +1,148 @@
-// js/modules/ui.js
-import { CONFIG } from '../config.js';
+import { CONFIG } from "../config.js";
+import { hardware } from "./hardware.js";
+
+let currentPhoto = null;
+let currentCoords = null;
 
 const ui = {
-  /**
-   * Inicializa los listeners de eventos de la interfaz
-   */
+  _formCallback: null,
+
   attachEventListeners: () => {
     const fab = document.querySelector(CONFIG.UI_SELECTORS.FAB_BUTTON);
     const closeBtn = document.querySelector(CONFIG.UI_SELECTORS.CLOSE_MODAL);
     const modal = document.querySelector(CONFIG.UI_SELECTORS.REPORT_MODAL);
-    
-    if (fab) {
-      fab.addEventListener('click', () => ui.showReportForm());
-    }
-    
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => ui.hideReportForm());
-    }
+    const form = document.querySelector(CONFIG.UI_SELECTORS.REPORT_FORM);
 
-    // Cerrar modal al hacer clic fuera
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            ui.hideReportForm();
-        }
+    if (fab) fab.addEventListener("click", () => ui.showReportForm());
+    if (closeBtn) closeBtn.addEventListener("click", () => ui.hideReportForm());
+
+    window.addEventListener("click", (e) => {
+      if (e.target === modal) ui.hideReportForm();
     });
+
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const title = document.getElementById("report-title").value;
+        const description = document.getElementById("report-description").value;
+        const locationField = document.getElementById("location-field");
+
+        if (!title) return alert("Título obligatorio");
+        if (!currentPhoto) return alert("Toma una foto");
+        if (!currentCoords) return alert("Ubicación no disponible");
+
+        ui._formCallback({
+          title,
+          description,
+          photoData: currentPhoto,
+          latitude: currentCoords.lat,
+          longitude: currentCoords.lng,
+          locationName: locationField.value,
+        });
+
+        ui.hideReportForm();
+      });
+    }
   },
 
+  attachFormHandler: (cb) => {
+    ui._formCallback = cb;
+  },
+
+  // 🔥 UBICACIÓN AUTOMÁTICA QUE SÍ FUNCIONA
   showReportForm: () => {
     const modal = document.querySelector(CONFIG.UI_SELECTORS.REPORT_MODAL);
-    if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Evitar scroll de fondo
+    modal.classList.remove("hidden");
+
+    const cameraBtn = document.getElementById("btn-camera");
+    const preview = document.getElementById("preview");
+    const locationField = document.getElementById("location-field");
+
+    // 📸 CÁMARA
+    if (cameraBtn) {
+      cameraBtn.onclick = async () => {
+        const photo = await hardware.capturePhoto();
+        if (photo) {
+          currentPhoto = photo;
+          preview.src = photo;
+        }
+      };
+    }
+
+    // 🔥 UBICACIÓN AUTOMÁTICA (SIN API)
+    if (navigator.geolocation) {
+      locationField.value = "Obteniendo ubicación...";
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          currentCoords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          };
+
+          // 👉 AQUÍ SE GUARDA EN EL INPUT
+          locationField.value = `📍 ${currentCoords.lat.toFixed(5)}, ${currentCoords.lng.toFixed(5)}`;
+
+          console.log("✅ Ubicación guardada", currentCoords);
+        },
+        (err) => {
+          console.error("❌ Error ubicación:", err);
+          locationField.value = "No se pudo obtener ubicación";
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+        },
+      );
+    } else {
+      locationField.value = "Geolocalización no soportada";
     }
   },
 
   hideReportForm: () => {
     const modal = document.querySelector(CONFIG.UI_SELECTORS.REPORT_MODAL);
-    if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-        document.querySelector(CONFIG.UI_SELECTORS.REPORT_FORM)?.reset();
-    }
+    modal.classList.add("hidden");
+
+    currentPhoto = null;
+    currentCoords = null;
+
+    const preview = document.getElementById("preview");
+    const locationField = document.getElementById("location-field");
+
+    if (preview) preview.src = "";
+    if (locationField) locationField.value = "";
   },
 
   updateReportsList: (reports = []) => {
     const container = document.querySelector(CONFIG.UI_SELECTORS.REPORTS_LIST);
     if (!container) return;
-    
-    if (!reports || reports.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No hay reportes guardados aún.</p>
-                <span>¡Presiona el botón + para empezar!</span>
-            </div>
-        `;
-        return;
+
+    if (!reports.length) {
+      container.innerHTML = `
+        <div class="loading-placeholder">
+          No hay reportes aún
+        </div>
+      `;
+      return;
     }
 
-    container.innerHTML = reports.map(report => `
-        <article class="report-card" data-id="${report.id}">
-            <img src="${report.photoData || 'assets/placeholder.png'}" alt="${report.title}">
-            <div class="report-info">
-                <h3>${ui.escapeHtml(report.title)}</h3>
-                <p class="report-meta">${report.getFormattedDate()} • ${report.locationName || 'Sin ubicación'}</p>
-                <span class="report-status-badge status-${report.status}">
-                    ${report.getStatusText()}
-                </span>
-            </div>
-        </article>
-    `).join('');
+    container.innerHTML = reports
+      .map(
+        (r) => `
+      <article class="report-card">
+        <img src="${r.photoData}">
+        <div class="report-info">
+          <h3>${r.title}</h3>
+          <p class="report-meta">
+            ${r.locationName || "Sin ubicación"}
+          </p>
+        </div>
+      </article>
+    `,
+      )
+      .join("");
   },
-
-  displayToast: (message, duration = 3000) => {
-      const container = document.querySelector(CONFIG.UI_SELECTORS.TOAST_CONTAINER);
-      if (!container) return;
-
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.textContent = message;
-
-      container.appendChild(toast);
-
-      setTimeout(() => {
-          toast.style.opacity = '0';
-          setTimeout(() => toast.remove(), 300);
-      }, duration);
-  },
-
-  updateConnectionStatus: (isOnline) => {
-      const el = document.querySelector(CONFIG.UI_SELECTORS.CONNECTION_INDICATOR);
-      if (!el) return;
-
-      const text = el.querySelector('.status-text');
-      
-      if (isOnline) {
-          el.classList.remove('offline');
-          el.classList.add('online');
-          if (text) text.textContent = 'Online';
-          ui.displayToast('Conexión restaurada');
-      } else {
-          el.classList.remove('online');
-          el.classList.add('offline');
-          if (text) text.textContent = 'Offline';
-          ui.displayToast('Trabajando sin conexión', 5000);
-      }
-  },
-
-  escapeHtml: (text) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-  }
 };
 
 export { ui };
