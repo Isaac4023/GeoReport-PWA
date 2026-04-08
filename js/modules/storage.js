@@ -1,19 +1,49 @@
-const storage = {
-  /**
-   * Miembro 3: Implementar IndexedDB (ObjectStore: reports)
-   */
-  initDB: async () => {
-    return null;
-  },
+import { Report } from "../models/report.js";
 
-  saveReport: async (reportData) => {
-    console.log('Implementar saveReport aquí (Miembro 3)');
-    return reportData.id;
-  },
+let db;
 
-  getAllReports: async () => {
-    return [];
-  }
-};
+export function initDB() {
+  return new Promise((resolve) => {
+    const request = indexedDB.open("GeoReportDB", 1);
 
-export { storage };
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+
+      db.createObjectStore("reportes", {
+        keyPath: "id",
+      });
+    };
+
+    request.onsuccess = (e) => {
+      db = e.target.result;
+      resolve();
+    };
+  });
+}
+
+export function guardarReporte(report) {
+  db.transaction("reportes", "readwrite")
+    .objectStore("reportes")
+    .put(report.toJSON());
+}
+
+export function obtenerReportes(cb) {
+  const store = db.transaction("reportes", "readonly").objectStore("reportes");
+
+  const lista = [];
+
+  store.openCursor().onsuccess = (e) => {
+    const cursor = e.target.result;
+
+    if (cursor) {
+      lista.push(Report.fromJSON(cursor.value));
+      cursor.continue();
+    } else {
+      cb(lista);
+    }
+  };
+}
+
+export function eliminarReporte(id) {
+  db.transaction("reportes", "readwrite").objectStore("reportes").delete(id);
+}

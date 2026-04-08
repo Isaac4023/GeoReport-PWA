@@ -1,70 +1,69 @@
-export const hardware = {
-  async requestCameraPermission() {
-    try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
-      return true;
-    } catch {
-      return false;
-    }
-  },
+// js/modules/hardware.js
 
-  async capturePhoto() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+export function iniciarCamara(video) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("Tu navegador no soporta cámara");
+    return;
+  }
 
-      const video = document.createElement("video");
+  navigator.mediaDevices
+    .getUserMedia({ video: true })
+    .then((stream) => {
       video.srcObject = stream;
-      await video.play();
-
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0);
-
-      stream.getTracks().forEach((t) => t.stop());
-
-      return canvas.toDataURL("image/jpeg");
-    } catch {
-      alert("Error cámara");
-      return null;
-    }
-  },
-
-  async requestLocation() {
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        () => resolve(true),
-        () => resolve(false),
-      );
+    })
+    .catch((err) => {
+      console.error("Error cámara:", err);
+      alert("No se pudo acceder a la cámara");
     });
-  },
+}
 
-  async getCurrentCoordinates() {
-    return new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          resolve({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          }),
-        (err) => reject(err),
-        { enableHighAccuracy: true },
-      );
-    });
-  },
+export function tomarFoto(video, canvas, preview) {
+  if (!video.videoWidth) {
+    alert("La cámara no está lista aún");
+    return null;
+  }
 
-  // 🔥 DIRECCIÓN REAL
-  async getAddressFromCoords(lat, lng) {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-      );
-      const data = await res.json();
-      return data.display_name || "Dirección no disponible";
-    } catch {
-      return "Error dirección";
-    }
-  },
-};
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          alert("Error al capturar imagen");
+          return;
+        }
+
+        preview.src = URL.createObjectURL(blob);
+        resolve(blob);
+      },
+      "image/jpeg",
+      0.9,
+    );
+  });
+}
+
+export function obtenerUbicacion(cb) {
+  if (!navigator.geolocation) {
+    alert("Geolocalización no soportada");
+    cb(null);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      cb({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+    },
+    (err) => {
+      console.error("Error ubicación:", err);
+      alert("No se pudo obtener la ubicación");
+      cb(null);
+    },
+  );
+}

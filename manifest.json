@@ -1,12 +1,10 @@
 {
-  "name": "GeoReport PWA",
-  "short_name": "GeoReport",
-  "description": "Sistema de gestión de incidencias universitarias sin conexión a internet.",
-  "start_url": "./index.html",
+  "name": "GeoReport",
+  "short_name": "Geo",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
-  "orientation": "portrait",
+  "background_color": "#b91c1c",
+  "theme_color": "#b91c1c",
   "icons": [
     {
       "src": "assets/icons/icon-192.png",

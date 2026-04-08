@@ -1,40 +1,113 @@
-import { Report } from "./models/report.js";
-import { ui } from "./modules/ui.js";
-import { hardware } from "./modules/hardware.js";
-import { storage } from "./modules/storage.js";
-import { notifications } from "./modules/notifications.js";
+import {
+  initDB,
+  guardarReporte,
+  obtenerReportes,
+  eliminarReporte,
+} from "./modules/storage.js";
 
-async function initApp() {
-  if ("serviceWorker" in navigator) {
-    await navigator.serviceWorker.register("/service-worker.js");
+import {
+  iniciarCamara,
+  tomarFoto,
+  obtenerUbicacion,
+} from "./modules/hardware.js";
+
+import { renderReportes } from "./modules/ui.js";
+import { notify } from "./modules/notifications.js";
+import { Report } from "./models/report.js";
+
+let fotoBlob = null;
+let coords = null;
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await initDB();
+
+  // STATUS ONLINE/OFFLINE
+  function actualizarEstado() {
+    const status = document.getElementById("status");
+
+    if (!status) return;
+
+    if (navigator.onLine) {
+      status.className = "status-indicator online";
+      status.innerHTML = `<div class="status-dot"></div> Online`;
+    } else {
+      status.className = "status-indicator offline";
+      status.innerHTML = `<div class="status-dot"></div> Offline`;
+    }
   }
 
-  await hardware.requestCameraPermission();
-  await hardware.requestLocation();
-  await notifications.requestPermission();
+  window.addEventListener("online", actualizarEstado);
+  window.addEventListener("offline", actualizarEstado);
+  actualizarEstado();
 
-  ui.attachEventListeners();
+  // LISTA
+  const lista = document.getElementById("report-list");
 
-  const reports = await storage.getAllReports();
-  ui.updateReportsList(reports);
+  function cargarLista() {
+    if (!lista) return;
+    obtenerReportes((data) => renderReportes(data, lista));
+  }
 
-  ui.attachFormHandler(async (formData) => {
-    const report = new Report({
-      title: formData.title,
-      description: formData.description,
-      photoData: formData.photoData,
-      latitude: formData.latitude,
-      longitude: formData.longitude,
-      locationName: formData.locationName,
-      timestamp: Date.now(),
-      status: "pending",
+  cargarLista();
+
+  // CÁMARA
+  const video = document.getElementById("camera");
+  const canvas = document.getElementById("snapshot");
+  const preview = document.getElementById("photo-preview");
+
+  if (video) iniciarCamara(video);
+
+  document
+    .getElementById("btn-take-photo")
+    ?.addEventListener("click", async () => {
+      const foto = await tomarFoto(video, canvas, preview);
+      if (foto) fotoBlob = foto;
     });
 
-    await storage.saveReport(report);
-
-    const updated = await storage.getAllReports();
-    ui.updateReportsList(updated);
+  // UBICACIÓN
+  obtenerUbicacion((c) => {
+    coords = c;
+    const txt = document.getElementById("coords");
+    if (txt && c) txt.textContent = `${c.lat}, ${c.lng}`;
   });
-}
 
-window.addEventListener("DOMContentLoaded", initApp);
+  // GUARDAR
+  document.getElementById("btn-save-report")?.addEventListener("click", () => {
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+
+    const report = new Report({
+      title,
+      description,
+      latitude: coords?.lat,
+      longitude: coords?.lng,
+      photo: fotoBlob,
+    });
+
+    if (!report.isValid()) {
+      alert("Completa todos los campos y toma la foto");
+      return;
+    }
+
+    guardarReporte(report);
+
+    notify("Reporte guardado correctamente");
+
+    setTimeout(() => {
+      location.href = "index.html";
+    }, 300);
+  });
+
+  // ELIMINAR
+  window.eliminar = (id) => {
+    if (confirm("¿Eliminar este reporte?")) {
+      eliminarReporte(id);
+      cargarLista();
+    }
+  };
+});
+
+// SW
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
